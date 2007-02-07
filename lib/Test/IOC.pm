@@ -12,9 +12,11 @@ our @EXPORT = qw(
     locate_service search_service
     locate_container search_container
     service_isa service_is service_can
+);
+
+our @EXPORT_OK = qw(
     registry
 );
-our @EXPORT_OK
 
 my $t = Test::Builder->new;
 
@@ -36,12 +38,14 @@ sub import {
 
 sub locate_service ($) {
     my $path = shift;
-    registry->locateService($path);
+    local $@;
+    eval { registry->locateService($path) };
 }
 
 sub search_for_service ($) {
     my $name = shift;
-    registry->locateService($name);
+    local $@;
+    eval { registry->searchForService($name) };
 }
 
 sub locate_container ($) {
@@ -51,7 +55,7 @@ sub locate_container ($) {
 
 sub search_for_container ($) {
     my $name = shift;
-    registry->locateContainer($name);
+    registry->searchForContainer($name);
 }
 
 # basic tests
@@ -113,19 +117,4 @@ foreach my $test ( keys %tests ) {
 __PACKAGE__;
 
 __END__
-
-=pod
-
-=head1 NAME
-
-Test::IOC - 
-
-=head1 SYNOPSIS
-
-	use Test::IOC;
-
-=head1 DESCRIPTION
-
-=cut
-
 
