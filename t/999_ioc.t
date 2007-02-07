@@ -76,12 +76,12 @@ service_can("/moose/logger", "log_file");
 # of sorts, you decide, but this tests the service wrapper
 # not the item within it
 service_is_literal("/moose/log_file");
-service_is_prototype("/moose/??");
+#service_is_prototype("/moose/??");
 service_is_singleton("/moose/application");
 
 # hmm... nothing else that comes to mind right now
 
-service_does("/moose/application", sub { ... something random ... }); # ???
+#service_does("/moose/application", sub { ... something random ... }); # ???
 
 
 

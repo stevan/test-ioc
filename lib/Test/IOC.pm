@@ -17,6 +17,7 @@ our @EXPORT = qw(
     service_isa service_is service_can service_is_deeply
     service_exists container_exists
     container_list_is service_list_is
+    service_is_literal service_is_prototye service_is_singleton
 );
 
 our @EXPORT_OK = qw(
@@ -121,6 +122,42 @@ sub service_list_is ($$;$) {
         @_ = ( [ sort $c->getServiceList ], [ sort @$spec ], $desc );
         goto &is_deeply;
     }
+}
+
+sub service_is_literal ($;$) {
+    my ( $path, $desc ) = @_;
+    $desc ||= "'$path' is a literal service";
+    local $@;
+    $t->ok( eval { get_service_object($path)->isa("IOC::Service::Literal") }, $desc );
+}
+
+sub service_is_prototye ($;$) {
+    my ( $path, $desc ) = @_;
+    $desc ||= "'$path' is a prototype service";
+    local $@;
+    $t->ok( eval { get_service_object($path)->isa("IOC::Service::Prototype") }, $desc );
+}
+
+sub service_is_singleton ($;$) {
+    my ( $path, $desc ) = @_;
+    $desc ||= "'$path' is a singleton service";
+    local $@;
+    my $s = get_service_object($path);
+    $t->ok( eval {
+        $s->isa("IOC::Service")
+            and
+        !$s->isa("IOC::Service::Literal")
+            and
+        !$s->isa("IOC::Service::Prototype")
+    }, $desc );
+}
+
+sub get_service_object ($) {
+    my $path = shift;
+    $path =~ s{ / ([^/]+) $ }{}x;
+    my $name = $1;
+    my $c = locate_container($path) || return;
+    $c->{services}{$name}; # FIXME yuck
 }
 
 # test + utility sub combination
