@@ -18,7 +18,7 @@ our @EXPORT_OK
 
 my $t = Test::Builder->new;
 
-my $r = IOC::Registry->new;
+my $r = IOC::Registry->instance;
 
 sub registry () { $r }
 
@@ -54,14 +54,33 @@ sub search_for_container ($) {
     registry->locateContainer($name);
 }
 
+# basic tests
+
 sub service_exists ($;$) {
     my ( $path, $desc ) = @_;
-    ok( defined(locate_service($path)), $desc || "The service '$path' exists in the registry" );
+    $t->ok( defined(locate_service($path)), $desc || "The service '$path' exists in the registry" );
 }
 
 sub container_exists ($;$) {
     my ( $path, $desc ) = @_;
-    ok( defined(locate_container($path)), $desc || "The container '$path' exists in the registry" );
+    $t->ok( defined(locate_container($path)), $desc || "The container '$path' exists in the registry" );
+}
+
+sub service_alias_ok ($$;$) {
+    my ( $real, $alias, $desc ) = @_;
+    $desc ||= "The service at '$real' is aliased to '$alias'";
+
+    return $t->is_eq( $real, registry->{service_aliases}{$alias}, $desc );
+
+    # FIXME test it like this:
+
+    # my $real_s  = locate_service($real);
+    # my $alias_s = locate_service($alias);
+
+    # return $t->fail("The service '$real' does not exist in the registry") unless defined $real_s;
+    # return $t->fail("The service '$alias' does not exist in the registry") unless defined $alias;
+    
+    # compare true equality of IOC::Service objects or deep equality of the returned services
 }
 
 # test + utility sub combination
@@ -83,9 +102,10 @@ foreach my $test ( keys %tests ) {
         my $service = locate_service($path);
 
         if ( defined $service ) {
-            $test_sub->( $service, @spec );
+            @_ = ( $service, @spec );
+            goto $test_sub;
         } else {
-            fail( "service '$path' does not exist in the registry" );
+            fail( "The service '$path' does not exist in the registry" );
         }
     }
 }
