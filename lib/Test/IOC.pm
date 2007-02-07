@@ -3,6 +3,9 @@
 package Test::IOC;
 use base qw/Exporter/;
 
+use strict;
+use warnings;
+
 use Test::Builder;
 
 use IOC::Registry;
@@ -11,7 +14,9 @@ use Test::More;
 our @EXPORT = qw(
     locate_service search_service
     locate_container search_container
-    service_isa service_is service_can
+    service_isa service_is service_can service_is_deeply
+    service_exists container_exists
+    container_list_is service_list_is
 );
 
 our @EXPORT_OK = qw(
@@ -24,33 +29,31 @@ my $r = IOC::Registry->instance;
 
 sub registry () { $r }
 
-sub import {
-    my($self) = shift;
-    my $pack = caller;
-
-    $Test->exported_to($pack);
-    $Test->plan(@_);
-
-    $self->export_to_level(1, $self, @EXPORT);
-}
-
 # utility subs
+
+our $err;
+
+sub try (&) {
+    my $s = shift;
+    local $@;
+    my $r = eval { $s->( @_ ) };
+    $err = $@;
+    $r;
+}
 
 sub locate_service ($) {
     my $path = shift;
-    local $@;
-    eval { registry->locateService($path) };
+    try { registry->locateService($path) };
 }
 
 sub search_for_service ($) {
     my $name = shift;
-    local $@;
-    eval { registry->searchForService($name) };
+    registry->searchForService($name);
 }
 
 sub locate_container ($) {
     my $path = shift;
-    registry->locateContainer($path);
+    try { registry->locateContainer($path) }
 }
 
 sub search_for_container ($) {
@@ -62,7 +65,7 @@ sub search_for_container ($) {
 
 sub service_exists ($;$) {
     my ( $path, $desc ) = @_;
-    $t->ok( defined(locate_service($path)), $desc || "The service '$path' exists in the registry" );
+    $t->ok( defined(locate_service($path)), $desc || "The service '$path' exists in the registry" ) || diag $err;
 }
 
 sub container_exists ($;$) {
@@ -87,12 +90,46 @@ sub service_alias_ok ($$;$) {
     # compare true equality of IOC::Service objects or deep equality of the returned services
 }
 
+sub container_list_is ($$;$) {
+    my ( $path, $spec, $desc ) = @_;
+    local $" = ", ";
+    $desc ||= "The containers at '$path' are @$spec";
+
+    my @got;
+
+    if ( $path eq "/" ) {
+        @got = registry->getRegisteredContainerList;
+    } else {
+        my $c = locate_container($path) || return $t->fail("Container '$path' does not exist"); 
+        @got = $c->getSubContainerList;
+    }
+
+    @_ = ( [ sort @got ], [ sort @$spec ], $desc );
+    goto &is_deeply;
+}
+
+sub service_list_is ($$;$) {
+    my ( $path, $spec, $desc ) = @_;
+    local $" = ", ";
+    $desc ||= "The services at '$path' are @$spec";
+
+    if ( $path eq "/" ) {
+        die "Services cannot be added to the registry";
+    } else {
+        my $c = locate_container($path) || return $t->fail("Container '$path' does not exist"); 
+
+        @_ = ( [ sort $c->getServiceList ], [ sort @$spec ], $desc );
+        goto &is_deeply;
+    }
+}
+
 # test + utility sub combination
 
 my %tests = (
-    is  => \&is,
-    isa => \&isa_ok,
-    can => \&can_ok,
+    is        => \&is,
+    isa       => \&isa_ok,
+    can       => \&can_ok,
+    is_deeply => \&is_deeply,
 );
 
 foreach my $test ( keys %tests ) {

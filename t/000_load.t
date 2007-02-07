@@ -5,6 +5,4 @@ use warnings;
 
 use Test::More tests => 1;
 
-BEGIN {
-    use_ok('Test::IOC');
-}
+use ok 'Test::IOC';
