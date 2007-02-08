@@ -8,6 +8,7 @@ use Test::More 'no_plan';
 use ok 'Test::IOC';
 
 use IOC;
+use IOC::Service::Prototype;
 
 {
     package FileLogger;
@@ -33,7 +34,7 @@ use IOC;
 
 my $container = IOC::Container->new('moose');
 $container->register(IOC::Service::Literal->new('log_file' => "logfile.log"));
-$container->register(IOC::Service->new('logger' => sub { 
+$container->register(IOC::Service::Prototype->new('logger' => sub { 
     my $c = shift; 
     return FileLogger->new($c->get('log_file'));
 }));
@@ -69,20 +70,7 @@ service_isa("/moose/logger", "FileLogger");
 service_is_deeply("/moose/logger", $container->get("logger"), "logger service returned OK");
 service_can("/moose/logger", "log_file");
 
-# lifecycle stuff
-# feel free to change these function names
-# these will require you to fetch the service yourself, 
-# probably the easiest way is to make your own visitor
-# of sorts, you decide, but this tests the service wrapper
-# not the item within it
 service_is_literal("/moose/log_file");
-#service_is_prototype("/moose/??");
+service_is_prototype("/moose/logger");
 service_is_singleton("/moose/application");
-
-# hmm... nothing else that comes to mind right now
-
-#service_does("/moose/application", sub { ... something random ... }); # ???
-
-
-
 

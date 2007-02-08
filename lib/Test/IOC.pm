@@ -17,7 +17,7 @@ our @EXPORT = qw(
     service_isa service_is service_can service_is_deeply
     service_exists container_exists
     container_list_is service_list_is
-    service_is_literal service_is_prototye service_is_singleton
+    service_is_literal service_is_prototype service_is_singleton
 );
 
 our @EXPORT_OK = qw(
@@ -131,7 +131,7 @@ sub service_is_literal ($;$) {
     $t->ok( eval { get_service_object($path)->isa("IOC::Service::Literal") }, $desc );
 }
 
-sub service_is_prototye ($;$) {
+sub service_is_prototype ($;$) {
     my ( $path, $desc ) = @_;
     $desc ||= "'$path' is a prototype service";
     local $@;
