@@ -48,9 +48,6 @@ $container->register(IOC::Service->new('application' => sub {
 my $reg = IOC::Registry->new();
 $reg->registerContainer($container);
 
-isa_ok(Test::IOC::registry(), 'IOC::Registry');
-is(Test::IOC::registry(), $reg, "... our registry is the same");
-
 container_exists("/moose");
 container_list_is("/", [ "moose" ], "... these are the containers in the reg");
 
