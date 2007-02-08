@@ -11,6 +11,8 @@ use Test::Builder;
 use IOC::Registry;
 use Test::More;
 
+our $VERSION = "0.01";
+
 our @EXPORT = qw(
     locate_service search_service
     locate_container search_container
@@ -20,21 +22,15 @@ our @EXPORT = qw(
     service_is_literal service_is_prototype service_is_singleton
 );
 
-our @EXPORT_OK = qw(
-    registry
-);
-
 my $t = Test::Builder->new;
 
 my $r = IOC::Registry->instance;
-
-sub registry () { $r }
 
 # utility subs
 
 our $err;
 
-sub try (&) {
+sub _try (&) {
     my $s = shift;
     local $@;
     my $r = eval { $s->( @_ ) };
@@ -44,22 +40,22 @@ sub try (&) {
 
 sub locate_service ($) {
     my $path = shift;
-    try { registry->locateService($path) };
+    _try { $r->locateService($path) };
 }
 
 sub search_for_service ($) {
     my $name = shift;
-    registry->searchForService($name);
+    $r->searchForService($name);
 }
 
 sub locate_container ($) {
     my $path = shift;
-    try { registry->locateContainer($path) }
+    _try { $r->locateContainer($path) }
 }
 
 sub search_for_container ($) {
     my $name = shift;
-    registry->searchForContainer($name);
+    $r->searchForContainer($name);
 }
 
 # basic tests
@@ -78,7 +74,7 @@ sub service_alias_ok ($$;$) {
     my ( $real, $alias, $desc ) = @_;
     $desc ||= "The service at '$real' is aliased to '$alias'";
 
-    return $t->is_eq( $real, registry->{service_aliases}{$alias}, $desc );
+    return $t->is_eq( $real, $r->{service_aliases}{$alias}, $desc );
 
     # FIXME test it like this:
 
@@ -99,7 +95,7 @@ sub container_list_is ($$;$) {
     my @got;
 
     if ( $path eq "/" ) {
-        @got = registry->getRegisteredContainerList;
+        @got = $r->getRegisteredContainerList;
     } else {
         my $c = locate_container($path) || return $t->fail("Container '$path' does not exist"); 
         @got = $c->getSubContainerList;
@@ -192,3 +188,95 @@ __PACKAGE__;
 
 __END__
 
+=pod
+
+=head1 NAME
+
+Test::IOC - Test IOC registries
+
+=head1 SYNOPSIS
+
+    use Test::More;
+    use Test::IOC;
+
+    use MyIOCStuff;
+
+    service_exists("/app/log_file");
+    service_is_literal("/app/log_file");
+    
+    service_exists("/app/logger");
+    service_is_singleton("/app/logger");
+    service_can("/app/logger", qw/warn debug/);
+
+=head1 DESCRIPTION
+
+This module provides some simple facilities to test IOC registries for
+correctness.
+
+=head1 EXPORTS
+
+=over 4
+
+=item service_exists $path
+
+=item container_exists $path
+
+Checks that the path exists in the registry.
+
+=item service_is $path, $spec
+
+=item service_isa $path, $class
+
+=item service_can $path, @methods
+
+=item service_is_deeply $path, $spec
+
+These methods provide tests akin to Test::More's C<is>, C<isa_ok>, C<can_ok>
+and C<is_deeply>, except that the first argument is used as a path to fetch
+from the registry.
+
+=item service_is_singleton $path
+
+=item service_is_literal $path
+
+=item service_is_prototype $path
+
+Checks that the service constructor class is of the right type for lifecycle
+management.
+
+=item service_alias_ok $real, $alias
+
+Check that the path $real has an alias $alias
+
+
+=item container_list_is $parent_path, \@container_names
+
+=item service_list_is $parent_path, \@service_names
+
+Check that the child elements under $parent_path are as listed in the service
+name array reference. The names don't have to be sorte.
+
+=item get_service_object $path
+
+Utility function to get the L<IOC::Service> object (not the service itself) for
+a given path.
+
+=item locate_container $path
+
+Utility function to call L<IOC::Registry/locateContainer>.
+
+=item locate_service $path
+
+Utility function to call L<IOC::Registry/locateService>.
+
+=item search_for_container $name
+
+Utility function to call L<IOC::Registry/searchForContainer>.
+
+=item search_for_service $name
+
+Utility function to call L<IOC::Registry/searchForService>.
+
+=back
+
+=cut
