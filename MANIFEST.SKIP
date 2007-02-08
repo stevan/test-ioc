@@ -1,0 +1,15 @@
+\.DS_Store$
+^_build
+^Build$
+^Makefile$
+^blib
+~$
+\.bak$
+\.sw.$
+^cover_db
+^MANIFEST\.SKIP$
+\.tar\.gz$
+^test_mpegs
+^pm_to_blib$
+^_darcs
+^Build.PL$
